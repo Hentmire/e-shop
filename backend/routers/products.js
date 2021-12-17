@@ -4,6 +4,29 @@ const { Category } = require("../models/category");
 const router = express.Router();
 const { Product } = require("../models/product");
 const mongoose = require("mongoose");
+const multer = require("multer");
+const path = require("path");
+
+const FILE_TYPE_MAP = {
+    "image/png": "png",
+    "image/jpeg": "jpeg",
+    "image/jpg": "jpg",
+};
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const isValid = FILE_TYPE_MAP[file.mimetype];
+        const uploadError = isValid ? null : new Error("invalid image type");
+        cb(uploadError, path.join(__dirname, "../public/uploads/"));
+    },
+    filename: function (req, file, cb) {
+        const fileName = file.originalname.split(" ").join("-");
+        const extension = FILE_TYPE_MAP[file.mimetype];
+        cb(null, `${fileName}-${Date.now()}.${extension}`);
+    },
+});
+
+const upload = multer({ storage });
 
 router.get("/", async (req, res) => {
     let filter = {};
@@ -54,14 +77,21 @@ router.get("/:productId", async (req, res) => {
     }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", upload.single("image"), async (req, res) => {
     try {
         const category = await Category.findById(req.body.category);
         if (!category) {
             return res.status(400).send("You sent the wrong category");
         }
+        const file = req.file;
+        if (!file) return res.status(400).send("The image is required");
 
-        let product = new Product(req.body);
+        const basePath = `${req.protocol}://${req.get("host")}/public/upload/`;
+        const fileName = req.file.filename;
+        let product = new Product({
+            ...req.body,
+            image: `${basePath}${fileName}`,
+        });
 
         product = await product.save();
 
@@ -96,11 +126,55 @@ router.put("/:productId", async (req, res) => {
     );
 
     if (!product) {
-        res.status(400).send("The product can't be created");
+        res.status(500).send("The product can't be created");
     }
 
     res.send(product);
 });
+
+router.put(
+    "/gallery-images/:productId",
+    upload.array("images"),
+    async (req, res) => {
+        try {
+            if (!mongoose.isValidObjectId(req.params.productId)) {
+                return res.status(400).send("Invalid Product ID");
+            }
+
+            const files = req.files;
+            console.log("files", files);
+            if (!files) {
+                res.status(400).send("Images are required");
+            }
+
+            const basePath = `${req.protocol}://${req.get(
+                "host",
+            )}/public/upload/`;
+            let imagesPathes = [];
+            files.forEach((file) => {
+                imagesPathes.push(`${basePath}${file.originalname}`);
+            });
+
+            const product = await Product.findByIdAndUpdate(
+                req.params.productId,
+                { images: imagesPathes },
+                { new: true },
+            );
+
+            if (!product) {
+                res.status(500).send("The product can't be created");
+            }
+
+            res.send(product);
+        } catch (e) {
+            console.log("ERROR POST IMAGE GALLERY", e);
+            res.status(500).json({
+                error: e.message,
+                success: false,
+            });
+        }
+    },
+);
 
 router.delete("/:productId", (req, res) => {
     Product.findByIdAndRemove(req.params.productId)
