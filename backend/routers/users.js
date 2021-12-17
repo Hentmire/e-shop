@@ -140,4 +140,27 @@ router.get("/get/count", async (req, res) => {
     }
 });
 
+router.delete("/:userId", (req, res) => {
+    User.findByIdAndRemove(req.params.userId)
+        .then((user) => {
+            if (user) {
+                return res.status(200).json({
+                    success: true,
+                    message: "The user is deleted",
+                });
+            } else {
+                return res.status(404).json({
+                    success: false,
+                    message: "The user isn't found",
+                });
+            }
+        })
+        .catch((err) => {
+            return res.status(400).json({
+                success: false,
+                error: err,
+            });
+        });
+});
+
 module.exports = router;

@@ -69,17 +69,7 @@ router.post("/", async (req, res) => {
             return res.status(500).send("The product can't be created");
         }
 
-        product
-            .save()
-            .then((createdProduct) => {
-                res.status(201).json(createdProduct);
-            })
-            .catch((err) => {
-                res.status(500).json({
-                    error: err,
-                    success: false,
-                });
-            });
+        return res.status(200).send(product);
     } catch (e) {
         console.log("ERROR POST PRODUCT", e);
         res.status(500).json({
