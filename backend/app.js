@@ -8,11 +8,11 @@ const authJwt = require("./helpers/jwt");
 const errorHandler = require("./helpers/error-handler");
 const path = require("path");
 
-app.use(cors());
-app.options("*", cors());
-
 require("dotenv").config({ path: ".env" });
 const api = process.env.API_URL;
+
+app.use(cors());
+app.options("*", cors());
 
 //middleware
 app.use(bodyParser.json());

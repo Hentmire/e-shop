@@ -15,17 +15,15 @@ router.get("/", async (req, res) => {
         }
         res.status(200).send(orderList);
     } catch (e) {
-        console.log("ERROR GET ORDER LIST", e);
-        res.status(500).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR GET ORDER LIST ", e.message);
+        next(e);
     }
 });
 
 router.get("/:orderId", async (req, res) => {
     try {
-        const order = await Order.findById(req.params.orderId)
+        const { orderId } = req.params;
+        const order = await Order.findById(orderId)
             .populate("user", "name")
             .populate({
                 path: "orderItems",
@@ -39,11 +37,8 @@ router.get("/:orderId", async (req, res) => {
         }
         res.status(200).send(order);
     } catch (e) {
-        console.log("ERROR GET ORDER", e);
-        res.status(500).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR GET ORDER ", e.message);
+        next(e);
     }
 });
 
@@ -56,8 +51,6 @@ router.post("/", async (req, res) => {
                 return newOrderItem._id;
             }),
         );
-
-        console.log("orderItemsIds", orderItemsIds);
 
         const prices = await Promise.all(
             orderItemsIds.map(async (itemId) => {
@@ -84,19 +77,18 @@ router.post("/", async (req, res) => {
         }
         res.send(order);
     } catch (e) {
-        console.log("ERROR POST ORDER", e);
-        res.status(500).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR POST ORDER ", e.message);
+        next(e);
     }
 });
 
 router.put("/:orderId", async (req, res) => {
     try {
+        const { orderId } = req.params;
+        const { status } = req.body;
         const order = await Order.findByIdAndUpdate(
-            req.params.orderId,
-            { status: req.body.status },
+            orderId,
+            { status },
             { new: true },
         );
 
@@ -106,17 +98,15 @@ router.put("/:orderId", async (req, res) => {
 
         res.send(order);
     } catch (e) {
-        console.log("ERROR UPDATE ORDER", e);
-        res.status(500).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR UPDATE ORDER ", e.message);
+        next(e);
     }
 });
 
 router.delete("/:orderId", async (req, res) => {
     try {
-        const order = await Order.findByIdAndRemove(req.params.orderId);
+        const { orderId } = req.params;
+        const order = await Order.findByIdAndRemove(orderId);
         if (!order) {
             return res.status(404).json({
                 success: false,
@@ -133,11 +123,8 @@ router.delete("/:orderId", async (req, res) => {
             message: "The order is deleted",
         });
     } catch (e) {
-        console.log("ERROR DELETE ORDER", e);
-        res.status(500).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR DELETE ORDER ", e.message);
+        next(e);
     }
 });
 
@@ -155,11 +142,8 @@ router.get("/get/totalsales", async (req, res) => {
 
         res.status(200).send({ totalSales: totalSales.pop().totalSales });
     } catch (e) {
-        console.log("ERROR GET TOTAL SALES", e);
-        res.status(500).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR GET TOTAL SALES ", e.message);
+        next(e);
     }
 });
 
@@ -176,11 +160,8 @@ router.get("/get/count", async (req, res) => {
             orderCount,
         });
     } catch (e) {
-        console.log("ERROR GET ORDER COUNT", e);
-        return res.status(400).json({
-            success: false,
-            error: e.message,
-        });
+        console.log("ERROR GET ORDER COUNT ", e.message);
+        next(e);
     }
 });
 
